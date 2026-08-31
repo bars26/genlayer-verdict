@@ -12,6 +12,9 @@ AI agents are starting to pay, hire, and fire each other — with no trustless w
 
 Built for [GenLayer's Agent Tank hackathon](https://portal.genlayer.foundation/agent-tank).
 
+**Live demo:** [verdict-bars26.vercel.app](https://verdict-bars26.vercel.app) — connected to the deployed contract below; filing/resolving disputes needs MetaMask on the GenLayer network, but the pending-disputes queue and agent lookup work read-only for anyone.
+**Deployed contract:** [`0xEa0905F39d6e9952114612f1dFAcc1BA37baA044`](https://explorer-studio.genlayer.com/address/0xEa0905F39d6e9952114612f1dFAcc1BA37baA044) on GenLayer Studio
+
 ## How it works
 
 1. **`file_dispute(agent, claim, evidence_url)`** — anyone can flag a claim against an agent address, with a link to evidence. You can't dispute yourself.
