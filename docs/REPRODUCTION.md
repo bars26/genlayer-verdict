@@ -53,6 +53,22 @@ disputes and was excluded from `available_bond`), then withdrew it.
 Transfers are emitted on finalization, so the agent's and contract's balances settled about ten seconds after the last
 call.
 
+## Wallet test from the app
+
+Done from the live app with MetaMask (wallet `0x4F80B5c475fcEd34fc9A07FfCcF39E1Adc1406bf`), both as an agent and as a
+client:
+
+| Step | Tx | Result |
+|---|---|---|
+| register the wallet as agent "bars1" with written terms | [`0x342f24ae…71ed53`](https://explorer-studio.genlayer.com/tx/0x342f24aed3a618ef99a0552b6eeb49b512cd3665d576010ce4467904bb71ed53) | FINALIZED, SUCCESS |
+| post a 2 GEN bond | [`0x440c7580…61cd17`](https://explorer-studio.genlayer.com/tx/0x440c7580ff0744758e6cf54c90634490529359e7e68cf2e9b9c65a1be061cd17) | bars1 bond 2 GEN |
+| file `dispute_4` against TransBot (order 1001 evidence), 0.5 GEN stake, 1 GEN compensation asked | [`0xdb22323c…ff2f54`](https://explorer-studio.genlayer.com/tx/0xdb22323ca68ad991e933132936139b23adfd22c2f16c58724bad3fb031ff2f54) | 1 GEN reserved from TransBot's bond |
+| after the response window, "Ask validators to rule" | [`0x03a2edf1…39092d`](https://explorer-studio.genlayer.com/tx/0x03a2edf1dbf114c75e73bd0c7cf1443d3399306e873722bb23e19f91d439092d) | **UPHELD** (`judged`) |
+| after the contest window, "Settle" | [`0x899e342c…2075c2`](https://explorer-studio.genlayer.com/tx/0x899e342c50f592e9e50859f123c2e5756c69111fc33b2eab47f92024502075c2) | 1.5 GEN to the client: stake + 1 GEN compensation |
+
+The wallet went from 443.78 to **445.28 GEN** once the transfer finalized; TransBot's bond fell from 5 to 4 GEN (4 GEN
+compensation paid in total, 2 upheld disputes), and the contract holds exactly the two agents' bonds: 4 + 2 = **6 GEN**.
+
 ## Every transaction
 
 All ACCEPTED by validator consensus with contract execution SUCCESS.
