@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { User, LogOut, AlertCircle, ExternalLink } from "lucide-react";
 import { useWallet } from "@/lib/genlayer/wallet";
-import { useAgentRecord } from "@/lib/hooks/useVerdict";
+import { useSnapshot } from "@/lib/hooks/useVerdict";
+import { sameAddress } from "@/lib/contracts/types";
 import { success, error, userRejected } from "@/lib/utils/toast";
 import { AddressDisplay } from "./AddressDisplay";
 import { Button } from "./ui/button";
@@ -31,8 +32,9 @@ export function AccountPanel() {
     switchWalletAccount,
   } = useWallet();
 
-  const { data: agentRecord } = useAgentRecord(address);
-  const disputesAgainstYou = agentRecord?.disputes_filed ?? 0;
+  const { disputes } = useSnapshot();
+  const donatedCount = disputes.filter((d) => sameAddress(d.filer, address)).length;
+  const recipientCount = disputes.filter((d) => sameAddress(d.agent, address)).length;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [connectionError, setConnectionError] = useState("");
@@ -98,9 +100,10 @@ export function AccountPanel() {
     return (
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogTrigger asChild>
-          <Button variant="gradient" disabled={isLoading}>
-            <User className="w-4 h-4 mr-2" />
-            Connect Wallet
+          <Button variant="gradient" disabled={isLoading} aria-label="Connect wallet">
+            <User className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Connect Wallet</span>
+            <span className="sm:hidden">Connect</span>
           </Button>
         </DialogTrigger>
         <DialogContent className="brand-card border-2">
@@ -109,7 +112,7 @@ export function AccountPanel() {
               Connect to GenLayer
             </DialogTitle>
             <DialogDescription>
-              Connect your MetaMask wallet to file or resolve disputes
+              Connect your MetaMask wallet to register an agent or file a dispute
             </DialogDescription>
           </DialogHeader>
 
@@ -183,15 +186,15 @@ export function AccountPanel() {
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
       <div className="flex items-center gap-4">
-        <div className="brand-card px-4 py-2 flex items-center gap-3">
+        <div className="brand-card px-4 py-2 hidden sm:flex items-center gap-3">
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-accent" />
             <AddressDisplay address={address} maxLength={12} />
           </div>
           <div className="h-4 w-px bg-white/10" />
           <div className="flex items-center gap-1">
-            <span className="text-sm font-semibold text-accent">{disputesAgainstYou}</span>
-            <span className="text-xs text-muted-foreground">disputes filed against you</span>
+            <span className="text-sm font-semibold text-accent">{donatedCount}</span>
+            <span className="text-xs text-muted-foreground">disputes filed</span>
           </div>
         </div>
 
@@ -219,19 +222,15 @@ export function AccountPanel() {
           </div>
 
           <div className="brand-card p-4 space-y-2">
-            <p className="text-sm text-muted-foreground">Your Trust Record</p>
-            <div className="grid grid-cols-3 gap-2 text-center">
+            <p className="text-sm text-muted-foreground">Your disputes</p>
+            <div className="grid grid-cols-2 text-center">
               <div>
-                <p className="text-xl font-bold">{agentRecord?.disputes_filed ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Filed against you</p>
+                <p className="text-xl font-bold text-accent">{donatedCount}</p>
+                <p className="text-xs text-muted-foreground">filed by this wallet</p>
               </div>
               <div>
-                <p className="text-xl font-bold text-green-400">{agentRecord?.disputes_dismissed ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Dismissed</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-red-400">{agentRecord?.disputes_upheld ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Upheld</p>
+                <p className="text-xl font-bold text-accent">{recipientCount}</p>
+                <p className="text-xs text-muted-foreground">against this wallet</p>
               </div>
             </div>
           </div>

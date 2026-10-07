@@ -1,199 +1,193 @@
 import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
-import type { Dispute, AgentRecord, TransactionReceipt } from "./types";
-import {
-  estimateWriteFeePreset,
-  feePresetToTransactionFees,
-  type FeePresetEstimate,
-  type FeePresetLevel,
-} from "../genlayer/fees";
+import type { Agent, Dispute, TransactionReceipt } from "./types";
+import { VerdictError, classifyError, rawMessage } from "../utils/errors";
+import { withBackoff } from "../utils/retry";
 
-const ZERO_AGENT_RECORD = (address: string): AgentRecord => ({
-  address,
-  disputes_filed: 0,
-  disputes_upheld: 0,
-  disputes_dismissed: 0,
-});
+export type TxStep = "awaiting_wallet" | "submitted" | "retrying" | "accepted";
+
+export interface TxProgress {
+  step: TxStep;
+  txHash?: string;
+  message?: string;
+}
+
+export interface TxResult {
+  txHash: string;
+  status: string;
+  executionResult: string;
+  receipt: TransactionReceipt;
+  /** The contract method's return value (dispute id, verdict, payout, ...). */
+  returned?: unknown;
+}
 
 /**
- * Verdict contract class for interacting with the GenLayer Verdict contract —
- * an on-chain trust registry for AI agents, adjudicated from real evidence
- * instead of self-reported scores.
+ * Pull the contract-execution outcome out of a consensus receipt.
+ *   result.status "rollback" -> the contract raised; payload is its message.
+ *   result.status "return"   -> payload.readable is the JSON-encoded return value.
  */
+export function executionOutcome(receipt: any): { result: string; message: string; returned: unknown } {
+  const lr = receipt?.consensus_data?.leader_receipt;
+  const first = Array.isArray(lr) ? lr[0] : lr;
+  const result = String(first?.execution_result ?? receipt?.execution_result ?? "UNKNOWN");
+  const r = first?.result ?? {};
+  let returned: unknown = undefined;
+  if (r?.status === "return") {
+    const readable = r?.payload?.readable;
+    try {
+      returned = typeof readable === "string" ? JSON.parse(readable) : readable;
+    } catch {
+      returned = readable;
+    }
+  }
+  const g = first?.genvm_result ?? {};
+  const message = [
+    r?.status === "rollback" && typeof r?.payload === "string" ? r.payload : "",
+    g.error_description,
+    g.stderr,
+    Array.isArray(g.raw_error?.causes) ? g.raw_error.causes.join(",") : "",
+  ]
+    .filter((s) => typeof s === "string" && s.trim().length > 0)
+    .join(" | ");
+  return { result, message, returned };
+}
+
+const WRITE_EFFECT: Record<string, string> = {
+  register_agent: "the agent was not registered",
+  post_bond: "the bond did not change",
+  request_withdrawal: "no withdrawal was requested",
+  complete_withdrawal: "nothing was withdrawn",
+  file_dispute: "no dispute was filed",
+  respond: "the response was not recorded",
+  resolve: "no ruling was recorded (validators may have failed to load the evidence or to agree)",
+  contest: "the contest was not recorded",
+  settle: "nothing was paid out",
+};
+
+/** Typed wrapper around the Verdict v2 Intelligent Contract. */
 class Verdict {
   private contractAddress: `0x${string}`;
   private client: any;
-  private studioUrl?: string;
 
   constructor(contractAddress: string, address?: string | null, studioUrl?: string) {
     this.contractAddress = contractAddress as `0x${string}`;
-    this.studioUrl = studioUrl;
-
     const config: any = { chain: studionet };
     if (address) config.account = address as `0x${string}`;
     if (studioUrl) config.endpoint = studioUrl;
-
     this.client = createClient(config);
   }
 
-  updateAccount(address: string): void {
-    const config: any = { chain: studionet, account: address as `0x${string}` };
-    if (this.studioUrl) config.endpoint = this.studioUrl;
-    this.client = createClient(config);
-  }
-
-  async estimateFileDisputeFees(
-    agent: string,
-    claim: string,
-    evidenceUrl: string,
-    level: FeePresetLevel = "standard"
-  ): Promise<FeePresetEstimate | undefined> {
-    return estimateWriteFeePreset(
-      this.client,
-      {
-        address: this.contractAddress,
-        functionName: "file_dispute",
-        args: [agent, claim, evidenceUrl],
-      },
-      level
+  private read<T>(functionName: string, args: unknown[] = []): Promise<T> {
+    return withBackoff(
+      () => this.client.readContract({ address: this.contractAddress, functionName, args }) as Promise<T>,
+      { phase: "read", attempts: 5 }
     );
   }
 
-  async estimateResolveDisputeFees(
-    disputeId: string,
-    level: FeePresetLevel = "standard"
-  ): Promise<FeePresetEstimate | undefined> {
-    return estimateWriteFeePreset(
-      this.client,
-      {
-        address: this.contractAddress,
-        functionName: "resolve_dispute",
-        args: [disputeId],
-      },
-      level
-    );
-  }
+  listAgents = () => this.read<string[]>("list_agents").then((v) => (Array.isArray(v) ? v : []));
+  listDisputes = () => this.read<string[]>("list_disputes").then((v) => (Array.isArray(v) ? v : []));
+  getAgent = (address: string) => this.read<Agent>("get_agent", [address]);
+  getDispute = (id: string) => this.read<Dispute>("get_dispute", [id]);
+  trustSummary = (address: string) => this.read<Record<string, unknown>>("trust_summary", [address]);
+  isTrusted = async (address: string, minBond: bigint, maxUpheld: bigint) =>
+    Boolean(await this.read<boolean>("is_trusted", [address, minBond, maxUpheld]));
 
-  /** Get every dispute currently awaiting resolution. */
-  async listPendingDisputes(): Promise<Dispute[]> {
-    try {
-      const disputes: any = await this.client.readContract({
-        address: this.contractAddress,
-        functionName: "list_pending_disputes",
-        args: [],
-      });
-      return Array.isArray(disputes) ? (disputes as Dispute[]) : [];
-    } catch (err) {
-      console.error("Error fetching pending disputes:", err);
-      throw new Error("Failed to fetch pending disputes from contract");
-    }
-  }
-
-  /** Get every dispute ever filed against a given agent address. */
-  async listDisputesByAgent(agent: string): Promise<Dispute[]> {
-    try {
-      const disputes: any = await this.client.readContract({
-        address: this.contractAddress,
-        functionName: "list_disputes_by_agent",
-        args: [agent],
-      });
-      return Array.isArray(disputes) ? (disputes as Dispute[]) : [];
-    } catch (err) {
-      console.error("Error fetching disputes for agent:", err);
-      throw new Error("Failed to fetch disputes for this agent");
-    }
-  }
-
-  /** Get a single dispute by id. */
-  async getDispute(disputeId: string): Promise<Dispute> {
-    const dispute = await this.client.readContract({
-      address: this.contractAddress,
-      functionName: "get_dispute",
-      args: [disputeId],
+  async getTransactionStatus(txHash: string): Promise<string> {
+    const tx: any = await withBackoff(() => this.client.getTransaction({ hash: txHash as `0x${string}` }), {
+      phase: "read",
     });
-    return dispute as Dispute;
+    return String(tx?.statusName ?? tx?.status_name ?? tx?.status ?? "UNKNOWN");
   }
 
-  /** Get an agent's trust record — zero counts if it has no history. */
-  async getAgentRecord(agent: string): Promise<AgentRecord> {
-    if (!agent) return ZERO_AGENT_RECORD(agent);
-    try {
-      const record: any = await this.client.readContract({
-        address: this.contractAddress,
-        functionName: "get_agent_record",
-        args: [agent],
-      });
-      return {
-        address: record.address,
-        disputes_filed: Number(record.disputes_filed) || 0,
-        disputes_upheld: Number(record.disputes_upheld) || 0,
-        disputes_dismissed: Number(record.disputes_dismissed) || 0,
-      };
-    } catch (err) {
-      console.error("Error fetching agent record:", err);
-      return ZERO_AGENT_RECORD(agent);
-    }
+  registerAgent(name: string, terms: string, endpoint: string, onProgress?: (p: TxProgress) => void) {
+    return this.write("register_agent", [name, terms, endpoint], 0n, onProgress);
+  }
+  postBond(valueWei: bigint, onProgress?: (p: TxProgress) => void) {
+    return this.write("post_bond", [], valueWei, onProgress);
+  }
+  requestWithdrawal(amountWei: bigint, onProgress?: (p: TxProgress) => void) {
+    return this.write("request_withdrawal", [amountWei], 0n, onProgress);
+  }
+  completeWithdrawal(onProgress?: (p: TxProgress) => void) {
+    return this.write("complete_withdrawal", [], 0n, onProgress);
+  }
+  fileDispute(agent: string, claim: string, evidenceUrl: string, requested: bigint, stake: bigint, onProgress?: (p: TxProgress) => void) {
+    return this.write("file_dispute", [agent, claim, evidenceUrl, requested], stake, onProgress);
+  }
+  respond(id: string, response: string, counterUrl: string, onProgress?: (p: TxProgress) => void) {
+    return this.write("respond", [id, response, counterUrl], 0n, onProgress);
+  }
+  resolve(id: string, onProgress?: (p: TxProgress) => void) {
+    return this.write("resolve", [id], 0n, onProgress);
+  }
+  contest(id: string, stake: bigint, onProgress?: (p: TxProgress) => void) {
+    return this.write("contest", [id], stake, onProgress);
+  }
+  settle(id: string, onProgress?: (p: TxProgress) => void) {
+    return this.write("settle", [id], 0n, onProgress);
   }
 
   /**
-   * File a dispute against an agent: "this agent promised X, delivered Y" —
-   * plus a link to evidence validators can independently check.
+   * Send a write and wait for consensus. Sends are never auto-retried (each attempt would
+   * prompt the wallet again); receipt polling is, because the hash is already known.
+   * A call the contract reverted is still ACCEPTED by consensus, so the receipt's
+   * execution_result is checked and a revert is reported as such.
    */
-  async fileDispute(
-    agent: string,
-    claim: string,
-    evidenceUrl: string,
-    feePreset?: FeePresetEstimate
-  ): Promise<TransactionReceipt> {
+  private async write(
+    functionName: string,
+    args: unknown[],
+    value: bigint,
+    onProgress?: (p: TxProgress) => void
+  ): Promise<TxResult> {
+    onProgress?.({ step: "awaiting_wallet", message: "Approve the transaction in your wallet." });
+    let txHash: string;
     try {
-      const fees = feePresetToTransactionFees(feePreset);
-      const txHash = await this.client.writeContract({
-        address: this.contractAddress,
-        functionName: "file_dispute",
-        args: [agent, claim, evidenceUrl],
-        value: BigInt(0),
-        ...(fees ? { fees } : {}),
-      });
-
-      const receipt = await this.client.waitForTransactionReceipt({
-        hash: txHash,
-        status: "ACCEPTED" as any,
-        retries: 24,
-        interval: 5000,
-      });
-
-      return receipt as TransactionReceipt;
+      txHash = (await this.client.writeContract({ address: this.contractAddress, functionName, args, value })) as string;
     } catch (err) {
-      console.error("Error filing dispute:", err);
-      throw new Error("Failed to file dispute");
+      throw classifyError(err, "send");
     }
-  }
+    onProgress?.({ step: "submitted", txHash, message: "Transaction sent. Waiting for validators." });
 
-  /** Resolve a pending dispute: validators fetch the evidence and vote. */
-  async resolveDispute(disputeId: string): Promise<TransactionReceipt> {
+    let receipt: any;
     try {
-      const feePreset = await this.estimateResolveDisputeFees(disputeId);
-      const fees = feePresetToTransactionFees(feePreset);
-      const txHash = await this.client.writeContract({
-        address: this.contractAddress,
-        functionName: "resolve_dispute",
-        args: [disputeId],
-        value: BigInt(0),
-        ...(fees ? { fees } : {}),
-      });
-
-      const receipt = await this.client.waitForTransactionReceipt({
-        hash: txHash,
-        status: "ACCEPTED" as any,
-        retries: 24,
-        interval: 5000,
-      });
-
-      return receipt as TransactionReceipt;
+      receipt = await withBackoff(
+        () => this.client.waitForTransactionReceipt({ hash: txHash, status: "ACCEPTED" as any, retries: 60, interval: 5000 }),
+        {
+          phase: "confirm",
+          onRetry: (i) =>
+            onProgress?.({ step: "retrying", txHash, message: `RPC busy while confirming; retrying in ${Math.round(i.waitMs / 1000)}s` }),
+        }
+      );
     } catch (err) {
-      console.error("Error resolving dispute:", err);
-      throw new Error("Failed to resolve dispute");
+      throw classifyError(err, "confirm", txHash);
     }
+
+    const status = String(receipt?.statusName ?? receipt?.status_name ?? "ACCEPTED");
+    const outcome = executionOutcome(receipt);
+    onProgress?.({ step: "accepted", txHash, message: `Consensus status: ${status}` });
+    // Payable methods refuse by refunding and returning "REFUNDED: <reason>" instead of reverting,
+    // because GenLayer keeps a reverted call's value in the contract.
+    if (typeof outcome.returned === "string" && outcome.returned.startsWith("REFUNDED:")) {
+      throw new VerdictError({
+        kind: "contract_revert",
+        phase: "verify",
+        txHash,
+        message: `The contract refused this call and is sending your GEN back: ${outcome.returned.slice(9).trim()}`,
+        hint: "Nothing changed on the contract. The refund lands in your wallet once the transaction finalizes.",
+        detail: String(outcome.returned),
+      });
+    }
+    if (outcome.result === "ERROR") {
+      throw new VerdictError({
+        kind: "accepted_no_effect",
+        phase: "verify",
+        txHash,
+        message: `The transaction was ACCEPTED, but the contract rejected the call, so ${WRITE_EFFECT[functionName] ?? "nothing changed"}.`,
+        hint: outcome.message ? `Contract message: ${outcome.message}` : "Open the transaction in the explorer for details.",
+        detail: outcome.message || rawMessage(receipt?.result) || "execution_result: ERROR",
+      });
+    }
+    return { txHash, status, executionResult: outcome.result, receipt, returned: outcome.returned };
   }
 }
 

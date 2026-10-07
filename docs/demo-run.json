@@ -1,0 +1,206 @@
+{
+    "contract": "0x3062BB83400b3F1a2A07854390c823D034B4E570",
+    "agent": "0x3B84ba9fc32e5b13aef4Ac29AbB487c43932019d",
+    "client1": "0x2D412b64bFcB28373b8fCF3ffEBa6aD450ACf38D",
+    "client2": "0x46A3F782cb1721ea17460b58fCE3fA63EA7DDb52",
+    "verdicts": [
+        "UPHELD",
+        "DISMISSED",
+        "INSUFFICIENT_EVIDENCE",
+        "INSUFFICIENT_EVIDENCE"
+    ],
+    "log": [
+        {
+            "who": "agent",
+            "call": "register_agent(\"TransBot\", \"TransBot translates documents from Engl, \"https://transbot.example/api\")",
+            "value": "0",
+            "hash": "0x25acb3f529317833000db515161cee063386dbe64db0dbbe35473361e22f2768",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS"
+        },
+        {
+            "who": "agent",
+            "call": "post_bond()",
+            "value": "10",
+            "hash": "0x2423a304ebd379a771a41c0f5a4db43873997a0f16c9b27908129493b7448040",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "bonded"
+        },
+        {
+            "who": "agent",
+            "call": "post_bond()",
+            "value": "0.01",
+            "hash": "0x9a421a81418ea46293a87b1188ba8ad8cfc75aa0a28ba747784c562745a762e5",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "REFUNDED: A bond deposit must be at least 0.1 GEN"
+        },
+        {
+            "who": "client-1",
+            "call": "file_dispute(\"0x3B84ba9fc32e5b13aef4Ac29AbB487c439320, \"TransBot took payment for order 1001 on, \"https://raw.githubusercontent.com/bars2, 3 GEN)",
+            "value": "0.5",
+            "hash": "0x2c9f80ffec0b9d7aeb779c5cda88a7d23fd3443dbe75b0b5785a7833712fcbf8",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "dispute_0"
+        },
+        {
+            "who": "agent",
+            "call": "respond(\"dispute_0\", \"Order 1001 was delayed because of a bac, \"\")",
+            "value": "0",
+            "hash": "0x622fd93b40d9a174695b12f8443c0cc0a88578aea56f75825ca05630acc6523a",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS"
+        },
+        {
+            "who": "client-1",
+            "call": "resolve(\"dispute_0\")",
+            "value": "0",
+            "hash": "0x18988f234ddb83b982540f00272499628395dd75230695a418e5ced98be7ff5e",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "UPHELD"
+        },
+        {
+            "who": "agent",
+            "call": "settle(\"dispute_0\")",
+            "value": "0",
+            "hash": "0x6e2e683674921f684152d1118a375b121c3fd4dbcdb8b144229bb09268cb27c6",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "{\"compensation\":\"3000000000000000000\"\"to_agent\":\"0\"\"to_filer\":\"3500000000000000000\"}"
+        },
+        {
+            "who": "client-2",
+            "call": "file_dispute(\"0x3B84ba9fc32e5b13aef4Ac29AbB487c439320, \"TransBot never delivered order 1002 (pr, \"https://raw.githubusercontent.com/bars2, 2 GEN)",
+            "value": "0.5",
+            "hash": "0xebd5eba838bea26b6da072b6064cc55b8e130a5ac7f712aca75f4f61801a6ed5",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "dispute_1"
+        },
+        {
+            "who": "agent",
+            "call": "respond(\"dispute_1\", \"Order 1002 was delivered 8 hours 40 min, \"https://raw.githubusercontent.com/bars2)",
+            "value": "0",
+            "hash": "0xcf0e7e762641702c63a2d24561f43d21a471c705bbbbb79b4afd01fa1596e338",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS"
+        },
+        {
+            "who": "client-2",
+            "call": "resolve(\"dispute_1\")",
+            "value": "0",
+            "hash": "0x14c66edda1e9a74ee922cab06fb53a3efc4fc6480e6c97d9e09a28e2de35e460",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "DISMISSED"
+        },
+        {
+            "who": "client-2",
+            "call": "contest(\"dispute_1\")",
+            "value": "0.5",
+            "hash": "0x8074f24964f5036ee51cc0195e5145369117ace6fbe1abe22e3f94bf20c71037",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "DISMISSED"
+        },
+        {
+            "who": "client-1",
+            "call": "settle(\"dispute_1\")",
+            "value": "0",
+            "hash": "0xd5fbcf5b86943e710b4a31112ffc9f7861b5d61abada65f0f4b7c6664b7ad78b",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "{\"compensation\":\"0\"\"to_agent\":\"1000000000000000000\"\"to_filer\":\"0\"}"
+        },
+        {
+            "who": "client-2",
+            "call": "file_dispute(\"0x3B84ba9fc32e5b13aef4Ac29AbB487c439320, \"TransBot delivered a poor machine trans, \"https://example.com/\", 0 GEN)",
+            "value": "0.5",
+            "hash": "0x20c243b32cc00d616d39bf2f10c9c9a3f5f6e8c6b9f86f5c7f9faf6a56f969aa",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "dispute_2"
+        },
+        {
+            "who": "agent",
+            "call": "respond(\"dispute_2\", \"This page is unrelated to TransBot or a, \"\")",
+            "value": "0",
+            "hash": "0x17d6b45e22521711fd5794e762743b80c92c1e66e8bf51b39fd1028a94564ff5",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS"
+        },
+        {
+            "who": "client-2",
+            "call": "resolve(\"dispute_2\")",
+            "value": "0",
+            "hash": "0xa392793d40311aebf031d9740f765336c9f841a1486ade23d42b3031adae3b61",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "INSUFFICIENT_EVIDENCE"
+        },
+        {
+            "who": "client-2",
+            "call": "settle(\"dispute_2\")",
+            "value": "0",
+            "hash": "0xf31d526f7168239824a7cbf799041e0987366a3a8c5ac16162403bac9f696107",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "{\"compensation\":\"0\"\"to_agent\":\"0\"\"to_filer\":\"500000000000000000\"}"
+        },
+        {
+            "who": "client-1",
+            "call": "file_dispute(\"0x3B84ba9fc32e5b13aef4Ac29AbB487c439320, \"TransBot ignored my refund request for , \"https://raw.githubusercontent.com/bars2, 1 GEN)",
+            "value": "0.5",
+            "hash": "0xa8884d081100437a2cbcea11043094c70f7feb4a33f44a31dcf3d979eb9183b9",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "dispute_3"
+        },
+        {
+            "who": "agent",
+            "call": "respond(\"dispute_3\", \"There is no order 1003 in our records.\", \"\")",
+            "value": "0",
+            "hash": "0x006458810d4723e758e40f019454c1867336361a4a03f586dd7b7c47a4e200e2",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS"
+        },
+        {
+            "who": "client-1",
+            "call": "resolve(\"dispute_3\")",
+            "value": "0",
+            "hash": "0x34e48860e881410157e44d3bcc4e593c757d1249cae80c4237d60d8248d6fb10",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "INSUFFICIENT_EVIDENCE"
+        },
+        {
+            "who": "client-1",
+            "call": "settle(\"dispute_3\")",
+            "value": "0",
+            "hash": "0xe98b35b89e641e242bee5d3b26202275e6c708fcf57987b52074de62384072b3",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "{\"compensation\":\"0\"\"to_agent\":\"0\"\"to_filer\":\"500000000000000000\"}"
+        },
+        {
+            "who": "agent",
+            "call": "request_withdrawal(2 GEN)",
+            "value": "0",
+            "hash": "0x26a97de1f3b051dd122c13fec5f2c6b76170bdbeda060d339932b5cbef9a2194",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS"
+        },
+        {
+            "who": "agent",
+            "call": "complete_withdrawal()",
+            "value": "0",
+            "hash": "0xa4a2614713c0240755ef15960c6c823593e56cb532d6ae5104cb5d795e70924d",
+            "status": "ACCEPTED",
+            "exec": "SUCCESS",
+            "returned": "2000000000000000000"
+        }
+    ]
+}

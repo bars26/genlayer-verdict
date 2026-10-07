@@ -26,3 +26,4 @@ artifacts/
 *.compiled.js
 package-lock.json
 
+*.tsbuildinfo

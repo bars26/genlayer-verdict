@@ -29,59 +29,37 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* GenLayer Brand Colors 2025 */
+/* Theme tokens */
 :root {
   --font-body: 'Switzer';
   --font-display: 'Switzer';
 
-  /* Base colors - keep black background for dark theme */
-  --background: oklch(0 0 0);
-  --foreground: oklch(0.98 0 0);
-
-  /* Cards with navy tint per brand guidelines */
-  --card: oklch(0.25 0.08 265);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.25 0.08 265);
-  --popover-foreground: oklch(0.98 0 0);
-
-  /* Primary: Purple-Pink Gradient (#9B6AF6 → #E37DF7) */
-  --primary: oklch(0.65 0.22 300);
-  --primary-foreground: oklch(0.98 0 0);
-
-  /* Secondary: Navy Blue (#282B5D) */
-  --secondary: oklch(0.25 0.08 265);
-  --secondary-foreground: oklch(0.98 0 0);
-
-  /* Muted states */
-  --muted: oklch(0.18 0.04 265);
-  --muted-foreground: oklch(0.55 0 0);
-
-  /* Accent: Purple (brand primary) */
-  --accent: oklch(0.65 0.22 300);
-  --accent-foreground: oklch(0.98 0 0);
-
-  /* Brand Blue: #110FFF */
-  --blue: oklch(0.55 0.37 265);
-  --blue-foreground: oklch(0.98 0 0);
-
-  /* Brand Pink (gradient end): #E37DF7 */
-  --pink: oklch(0.78 0.18 330);
-
-  /* Destructive remains red */
-  --destructive: oklch(0.65 0.25 25);
-  --destructive-foreground: oklch(0.98 0 0);
-
-  /* Borders and inputs with navy tint */
-  --border: oklch(0.25 0.08 265);
-  --input: oklch(0.20 0.06 265);
-  --ring: oklch(0.65 0.22 300);
-
-  /* Chart colors using brand palette */
-  --chart-1: oklch(0.65 0.22 300); /* Purple */
-  --chart-2: oklch(0.78 0.18 330); /* Pink */
-  --chart-3: oklch(0.55 0.37 265); /* Blue */
-  --chart-4: oklch(0.25 0.08 265); /* Navy */
-  --chart-5: oklch(0.60 0.20 315); /* Purple-Pink mid */
+  /* Verdict palette: graphite with a clear-sky accent */
+  --background: #0D1117;
+  --foreground: #E6EDF3;
+  --card: #161B22;
+  --card-foreground: #E6EDF3;
+  --popover: #161B22;
+  --popover-foreground: #E6EDF3;
+  --primary: #38BDF8;
+  --primary-foreground: #04121F;
+  --secondary: #1C2330;
+  --secondary-foreground: #E6EDF3;
+  --muted: #161B22;
+  --muted-foreground: #8B949E;
+  --accent: #38BDF8;
+  --accent-foreground: #04121F;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #30363D;
+  --input: #1C2330;
+  --ring: #38BDF8;
+  --map-land: #21262D;
+  --chart-1: #38BDF8;
+  --chart-2: #F59E0B;
+  --chart-3: #38BDF8;
+  --chart-4: #22C55E;
+  --chart-5: #EF4444;
 
   --radius: 0.5rem;
 
@@ -98,38 +76,31 @@
 
 /* Dark theme (same as root for this project - already dark) */
 .dark {
-  --background: oklch(0 0 0);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.25 0.08 265);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.25 0.08 265);
-  --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.65 0.22 300);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.25 0.08 265);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.18 0.04 265);
-  --muted-foreground: oklch(0.55 0 0);
-  --accent: oklch(0.65 0.22 300);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.65 0.25 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.25 0.08 265);
-  --input: oklch(0.20 0.06 265);
-  --ring: oklch(0.65 0.22 300);
-  --chart-1: oklch(0.65 0.22 300);
-  --chart-2: oklch(0.78 0.18 330);
-  --chart-3: oklch(0.55 0.37 265);
-  --chart-4: oklch(0.25 0.08 265);
-  --chart-5: oklch(0.60 0.20 315);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.65 0.22 300);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.25 0.08 265);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.25 0.08 265);
-  --sidebar-ring: oklch(0.65 0.22 300);
+  --background: #0D1117;
+  --foreground: #E6EDF3;
+  --card: #161B22;
+  --card-foreground: #E6EDF3;
+  --popover: #161B22;
+  --popover-foreground: #E6EDF3;
+  --primary: #38BDF8;
+  --primary-foreground: #04121F;
+  --secondary: #1C2330;
+  --secondary-foreground: #E6EDF3;
+  --muted: #161B22;
+  --muted-foreground: #8B949E;
+  --accent: #38BDF8;
+  --accent-foreground: #04121F;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #30363D;
+  --input: #1C2330;
+  --ring: #38BDF8;
+  --map-land: #21262D;
+  --chart-1: #38BDF8;
+  --chart-2: #F59E0B;
+  --chart-3: #38BDF8;
+  --chart-4: #22C55E;
+  --chart-5: #EF4444;
 }
 
 @theme inline {
@@ -223,8 +194,10 @@
   }
 
   /* Brand Gradient Utilities */
+  /* Primary action: solid sky blue (name kept for the shared Button variant) */
   .gradient-purple-pink {
-    background: linear-gradient(135deg, oklch(0.65 0.22 300) 0%, oklch(0.78 0.18 330) 100%);
+    background: #38BDF8;
+    color: #04121F !important;
   }
 
   .gradient-purple-blue {
@@ -233,11 +206,10 @@
 
   /* Clean Card Styles (replacing glass-morphism) */
   .brand-card {
-    background: oklch(0.25 0.08 265 / 0.6);
-    border: 1px solid oklch(0.30 0.10 265 / 0.4);
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #161B22;
+    border: 1px solid #30363D;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
   }
 
   .brand-card-hover:hover {
@@ -361,18 +333,13 @@
 }
 
 html {
-  min-height: 100vh !important;
+  min-height: 100vh;
   height: 100%;
   scroll-behavior: smooth;
-  background-color: #000000 !important;
-  background-image:
-    radial-gradient(ellipse 80% 60% at 50% -20%, oklch(0.65 0.22 300 / 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 50% at 80% 80%, oklch(0.55 0.37 265 / 0.05) 0%, transparent 50%),
-    linear-gradient(180deg, #000000 0%, #0a0a0f 50%, #000000 100%);
-  background-attachment: fixed !important;
-  background-size: 200% 200% !important;
-  background-repeat: no-repeat !important;
-  animation: brandGradientShift 20s ease infinite;
+  background-color: #0D1117;
+  background-image: radial-gradient(ellipse 70% 45% at 50% -10%, rgb(56 189 248 / 0.07) 0%, transparent 60%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   overscroll-behavior: none;
 }
 
@@ -397,7 +364,7 @@ main::before {
   right: 0;
   height: 2rem;
   background: linear-gradient(to bottom,
-    oklch(0.1 0.01 0 / 0.6) 0%,
+    rgb(13 17 23 / 0.6) 0%,
     transparent 100%
   );
   pointer-events: none;

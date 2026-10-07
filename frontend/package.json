@@ -1,7 +1,7 @@
 {
   "name": "genlayer-verdict-frontend",
   "version": "1.0.0",
-  "description": "Verdict - an on-chain trust registry for AI agents, built on adjudicated evidence, on GenLayer.",
+  "description": "Verdict — bonded trust registry for AI agents, with two-sided evidence-bound adjudication, on GenLayer.",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",

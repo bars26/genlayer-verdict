@@ -2,109 +2,74 @@
 
 import { Navbar } from "@/components/Navbar";
 import { DisputesTable } from "@/components/DisputesTable";
-import { AgentLookup } from "@/components/AgentLookup";
+import { AgentsPanel } from "@/components/AgentsPanel";
+import { StatsPanel } from "@/components/StatsPanel";
+import { MyAgentPanel } from "@/components/MyAgentPanel";
+import { TrustCheck } from "@/components/TrustCheck";
+import { TransactionPanel } from "@/components/TransactionPanel";
+import { BadgeCheck, FileWarning, MessageSquareReply, Scale, Wallet } from "lucide-react";
+
+const STEPS = [
+  { icon: BadgeCheck, t: "1. Register and bond", d: "The agent writes its terms on chain and puts GEN behind them." },
+  { icon: FileWarning, t: "2. Dispute", d: "A client stakes 0.5 GEN, links evidence and may ask for compensation from the bond." },
+  { icon: MessageSquareReply, t: "3. Answer", d: "The agent replies within the window with its own evidence." },
+  { icon: Scale, t: "4. Rule", d: "Every validator reads both sides; unreadable evidence is decided in code." },
+  { icon: Wallet, t: "5. Settle", d: "One contest, then arithmetic: upheld pays the client from the bond, dismissed pays the agent." },
+];
 
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Navbar */}
       <Navbar />
-
-      {/* Main Content - Padding to account for fixed navbar */}
       <main className="flex-grow pt-20 pb-12 px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          {/* Hero Section */}
-          <div className="text-center mb-8 animate-fade-in">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">Verdict</h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              A trust registry for AI agents, built on adjudicated evidence — not self-reported scores.
-              <br />
-              File a dispute, back it with evidence, let GenLayer validators decide.
-            </p>
-          </div>
+          <section className="mb-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+            <div className="lg:col-span-7 space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-accent">Trust registry for AI agents · v2</p>
+              <h1 className="text-3xl md:text-4xl xl:text-5xl font-bold leading-tight">Agents put GEN behind their promises. Validators decide who kept them.</h1>
+              <p className="text-base md:text-lg text-muted-foreground">
+                An agent registers what it promises and bonds GEN behind it. A client who was let down files a staked dispute with evidence;
+                the agent answers with its own. GenLayer validators read both sides and rule, and an upheld dispute pays the client from the
+                agent&apos;s bond. Marketplaces read the result with one call.
+              </p>
+            </div>
+            <ol className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {STEPS.map(({ icon: Icon, t, d }) => (
+                <li key={t} className="flex items-start gap-2 rounded-lg border border-border bg-card px-3 py-2 last:sm:col-span-2">
+                  <Icon className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="block text-foreground">{t}</strong>
+                    <span className="text-muted-foreground">{d}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
 
-          {/* Main Grid Layout - 2/1 columns on desktop, stacked on mobile */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-            {/* Left Column - Pending Disputes (67% on desktop) */}
-            <div className="lg:col-span-8 animate-slide-up">
-              <h2 className="text-xl font-bold mb-4">Pending Disputes</h2>
-              <DisputesTable />
+            <div className="lg:col-span-8 space-y-8">
+              <section>
+                <h2 className="text-xl font-bold mb-4">Agents</h2>
+                <AgentsPanel />
+              </section>
+              <section>
+                <h2 className="text-xl font-bold mb-4">Disputes</h2>
+                <DisputesTable />
+              </section>
             </div>
-
-            {/* Right Column - Agent Lookup (33% on desktop) */}
-            <div className="lg:col-span-4 animate-slide-up" style={{ animationDelay: "100ms" }}>
-              <AgentLookup />
-            </div>
-          </div>
-
-          {/* Info Section */}
-          <div className="mt-8 glass-card p-6 md:p-8 animate-fade-in" style={{ animationDelay: "200ms" }}>
-            <h2 className="text-2xl font-bold mb-4">How it Works</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <div className="text-accent font-bold text-lg">1. File a Dispute</div>
-                <p className="text-sm text-muted-foreground">
-                  Claim an agent broke a promise — what it said it would deliver, versus what actually
-                  happened — and link to evidence anyone can check.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="text-accent font-bold text-lg">2. Validators Adjudicate</div>
-                <p className="text-sm text-muted-foreground">
-                  GenLayer validators independently fetch the evidence and reach consensus on whether
-                  the claim holds — no single trusted reporter, no self-reported stars.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="text-accent font-bold text-lg">3. A Record That Can&apos;t Be Bought</div>
-                <p className="text-sm text-muted-foreground">
-                  Every upheld or dismissed dispute is permanent. A bad-faith claim just gets dismissed —
-                  only real evidence can hurt an agent&apos;s record.
-                </p>
-              </div>
+            <div className="lg:col-span-4 space-y-6">
+              <StatsPanel />
+              <TrustCheck />
+              <MyAgentPanel />
+              <TransactionPanel />
             </div>
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-2">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <a
-              href="https://genlayer.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-accent transition-colors"
-            >
-              Powered by GenLayer
-            </a>
-            <a
-              href="https://studio.genlayer.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-accent transition-colors"
-            >
-              Studio
-            </a>
-            <a
-              href="https://docs.genlayer.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-accent transition-colors"
-            >
-              Docs
-            </a>
-            <a
-              href="https://portal.genlayer.foundation/agent-tank"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-accent transition-colors"
-            >
-              Agent Tank
-            </a>
-          </div>
-        </div>
+      <footer className="border-t border-border py-3 text-center text-sm text-muted-foreground">
+        <a href="https://genlayer.com" target="_blank" rel="noopener noreferrer" className="hover:text-accent">Powered by GenLayer</a>
+        {" · "}
+        <a href="https://github.com/bars26/genlayer-verdict" target="_blank" rel="noopener noreferrer" className="hover:text-accent">Source</a>
       </footer>
     </div>
   );

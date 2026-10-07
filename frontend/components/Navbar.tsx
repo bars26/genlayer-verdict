@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import { AccountPanel } from "./AccountPanel";
 import { FileDisputeModal } from "./FileDisputeModal";
-import { usePendingDisputes } from "@/lib/hooks/useVerdict";
-import { Logo, LogoMark } from "./Logo";
+import { FaucetButton } from "./FaucetButton";
+import { useSnapshot } from "@/lib/hooks/useVerdict";
+import { formatGen, wei } from "@/lib/contracts/types";
+import { BrandMark } from "./BrandMark";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const { data: pendingDisputes } = usePendingDisputes();
+  const { agents, disputes } = useSnapshot();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,7 +42,8 @@ export function Navbar() {
   };
   const borderRadius = getBorderRadius();
 
-  const pendingCount = pendingDisputes?.length || 0;
+  const bondedGen = formatGen(agents.reduce((t, a) => t + wei(a.bond), 0n), 1);
+  const openCount = disputes.filter((d) => d.state !== "settled").length;
 
   return (
     <header
@@ -59,22 +62,22 @@ export function Navbar() {
         <div
           className="backdrop-blur-xl border transition-all duration-500 ease-out md:rounded-none"
           style={{
-            borderColor: `oklch(0.3 0.02 0 / ${0.4 + scrollProgress * 0.4})`,
-            background: `linear-gradient(135deg, oklch(0.18 0.01 0 / ${0.1 + scrollProgress * 0.3}) 0%, oklch(0.15 0.01 0 / ${0.05 + scrollProgress * 0.25}) 50%, oklch(0.16 0.01 0 / ${0.08 + scrollProgress * 0.27}) 100%)`,
+            borderColor: `rgb(48 54 61 / ${0.5 + scrollProgress * 0.5})`,
+            background: `rgb(13 17 23 / ${0.55 + scrollProgress * 0.35})`,
             borderRadius: `${borderRadius}px`,
             borderWidth: '1px',
             borderLeftWidth: isScrolled ? '1px' : '0px',
             borderRightWidth: isScrolled ? '1px' : '0px',
             borderTopWidth: isScrolled ? '1px' : '0px',
             boxShadow: isScrolled
-              ? '0 32px 64px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 0 oklch(0.3 0.02 0 / 0.3)'
+              ? '0 24px 48px 0 rgba(0, 0, 0, 0.35)'
               : 'none',
             backdropFilter: 'blur(16px) saturate(180%)',
             WebkitBackdropFilter: 'blur(16px) saturate(180%)',
           }}
         >
           <div
-            className="px-6 transition-all duration-500 mx-auto"
+            className="px-4 sm:px-6 transition-all duration-500 mx-auto"
             style={{
               maxWidth: isScrolled ? '80rem' : '112rem',
             }}
@@ -85,22 +88,27 @@ export function Navbar() {
             >
               {/* Left: Logo */}
               <div className="flex items-center gap-3">
-                {/* Show mark only on mobile, full logo on desktop */}
-                <LogoMark size="md" className="flex md:hidden" />
-                <Logo size="md" className="hidden md:flex" />
-                <span className="text-lg md:text-xl font-bold ml-2">Verdict</span>
+                <BrandMark size={30} />
+                <span className="hidden sm:inline text-lg md:text-xl font-bold">Verdict</span>
               </div>
 
               {/* Center: Stats */}
               <div className="hidden md:flex items-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Pending Disputes:</span>
-                  <span className="text-foreground font-bold text-accent">{pendingCount}</span>
+                  <span className="text-muted-foreground">Bonded:</span>
+                  <span className="text-foreground font-bold text-accent">{bondedGen} GEN</span>
                 </div>
+                {openCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Open disputes:</span>
+                    <span className="text-sky-300 font-bold">{openCount}</span>
+                  </div>
+                )}
               </div>
 
               {/* Right: Actions */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <FaucetButton />
                 <FileDisputeModal />
                 <AccountPanel />
               </div>

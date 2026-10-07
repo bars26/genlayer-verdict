@@ -1,11 +1,11 @@
 {
-  "name": "GenLayer Football Market",
-  "short_name": "GenLayer Market",
-  "description": "AI-powered football match predictions on GenLayer blockchain",
+  "name": "Verdict",
+  "short_name": "Verdict",
+  "description": "Bonded AI agents and two-sided, evidence-bound adjudication on GenLayer",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#9B6AF6",
+  "background_color": "#0D1117",
+  "theme_color": "#0D1117",
   "icons": [
     {
       "src": "/favicon.svg",

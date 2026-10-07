@@ -1,122 +1,191 @@
 # Verdict
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/license/mit/)
-[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/8Jm4v89VAu)
-[![Telegram](https://img.shields.io/badge/Telegram--T.svg?style=social&logo=telegram)](https://t.me/genlayer)
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/yeagerai.svg?style=social&label=Follow%20%40GenLayer)](https://x.com/GenLayer)
 
-## About
+<img src="assets/verdict-logo.png" alt="Verdict logo" width="96" align="right" />
 
-AI agents are starting to pay, hire, and fire each other — with no trustless way to know if an agent actually delivers what it promised. Today's agent "reputation" is a claim anyone can fake: a self-reported score, or a passive ledger that trusts whoever registers as "verifier."
+**A bonded trust registry for AI agents, with two-sided, evidence-bound adjudication by GenLayer validators.**
 
-**Verdict** is an on-chain trust registry for AI agents built on adjudicated evidence instead of self-reported scores. It works through *disputes*, not ratings: either party to a transaction can flag a claim — "Agent X promised Y, delivered Z" — with a link to evidence. GenLayer validators independently fetch that evidence and reach consensus on whether the claim holds, using the Equivalence Principle, rather than trusting a single reporter who could be wrong or bribed. Each agent accumulates a permanent, tamper-proof record of upheld and dismissed disputes that any other agent, marketplace, or human can check before trusting it with money or a task.
+AI agents are starting to take payment for work and hire each other, with no trustless way to know whether an agent
+delivers what it promises. Verdict makes the promise and the track record verifiable:
 
-Built for [GenLayer's Agent Tank hackathon](https://portal.genlayer.foundation/agent-tank).
+1. An **agent registers its terms of service** on chain and **bonds GEN** behind them.
+2. A client who was let down **files a dispute**: a 0.5 GEN stake, a link to public evidence and, optionally, a
+   compensation claim that is reserved from the agent's bond.
+3. The **agent answers** within a response window, with its own text and evidence.
+4. **Every validator reads both sides' evidence** and rules **UPHELD**, **DISMISSED** or **INSUFFICIENT_EVIDENCE**
+   against the terms the agent registered. Evidence that cannot be loaded is decided in code.
+5. The losing side can pay for **one independent re-assessment**; then **settlement is arithmetic**: an upheld dispute
+   pays the client from the bond, a dismissed one pays the agent the client's stake.
 
-**Live demo:** [verdict-bars26.vercel.app](https://verdict-bars26.vercel.app) — connected to the deployed contract below; filing/resolving disputes needs MetaMask on the GenLayer network, but the pending-disputes queue and agent lookup work read-only for anyone.
-**Deployed contract:** [`0xEa0905F39d6e9952114612f1dFAcc1BA37baA044`](https://explorer-studio.genlayer.com/address/0xEa0905F39d6e9952114612f1dFAcc1BA37baA044) on GenLayer Studio
+A marketplace or another contract calls `is_trusted(agent, min_bond, max_upheld)` before handing the agent money or a task.
 
-## How it works
+**Live app:** [verdict-bars26.vercel.app](https://verdict-bars26.vercel.app). Reads need no wallet. Writes need MetaMask
+on GenLayer Studio (chain 61999); the **Test GEN** button funds your wallet from the Studio faucet.
+**Contract (v2):** [`0x3062BB83400b3F1a2A07854390c823D034B4E570`](https://explorer-studio.genlayer.com/address/0x3062BB83400b3F1a2A07854390c823D034B4E570) on GenLayer Studio.
+**Contract (v1, Agent Tank):** [`0xEa0905F39d6e9952114612f1dFAcc1BA37baA044`](https://explorer-studio.genlayer.com/address/0xEa0905F39d6e9952114612f1dFAcc1BA37baA044), unchanged.
 
-1. **`file_dispute(agent, claim, evidence_url)`** — anyone can flag a claim against an agent address, with a link to evidence. You can't dispute yourself.
-2. **`resolve_dispute(dispute_id)`** — validators fetch `evidence_url` and ask an LLM whether it supports the claim. Under the Equivalence Principle (`gl.eq_principle.strict_eq`), leader and validator nodes each run this check independently and must agree on a single `upheld: bool` field — never coerced from an unchecked value (see Design notes). The dispute is marked `upheld` (the agent's promise was broken) or `dismissed` (the claim didn't hold), and the agent's record updates accordingly.
-3. **Views** — `get_dispute`, `get_agent_record` (zero-valued if the agent has no history), `list_disputes_by_agent`, `list_pending_disputes` — let a frontend or another contract check an agent's track record without needing an indexer.
+## What changed in v2
 
-**The registry is self-correcting against spam**: a bad-faith or unfounded dispute just gets `dismissed`, which counts *in the agent's favor*. Only a dispute backed by real, independently-verifiable evidence can hurt an agent's record — there's no cost to being falsely accused.
+| | v1 (Agent Tank) | v2 |
+|---|---|---|
+| What a dispute is judged against | the filer's own description of the promise | the **terms the agent registered**, snapshotted when the dispute is filed |
+| Who is heard | only the filer | **both sides**: the agent answers within a response window with its own evidence |
+| Fake evidence | anyone could host a page saying "agent X failed" and get it upheld for free | filing costs a **stake** that goes to the agent if the dispute is dismissed, and the agent's counter-evidence is read next to the filer's |
+| Money | none; a pure ledger | **agent bonds**, **dispute stakes**, **compensation from the bond**, external EVM transfers, refund-instead-of-revert for refused payable calls |
+| Outcomes | `upheld: bool` | `UPHELD` / `DISMISSED` / `INSUFFICIENT_EVIDENCE`, with a reason code; unreadable evidence decided in code |
+| Mistakes | final | **one contest** by the losing side, with its own stake, inside a 10-minute window |
+| Leaving | n/a | **unbonding notice period**: a withdrawing agent's bond stays claimable until it ends |
+| Integrators | `get_agent_record` | `trust_summary` and `is_trusted(agent, min_bond, max_upheld)` |
+| Prompt | evidence text pasted straight in | every party-supplied text **fenced as data**, length-capped |
+| Frontend | template look, every read from the browser | agent registry, profile cards, role-aware actions, server-cached snapshot (no Studio calls from the browser on load), transaction panel, faucet, its own design |
+| Tests | 11 | **31** (plus the template's unrelated pattern tests removed) |
 
-Verdict deliberately holds no funds and has no payable methods — it's a pure adjudication ledger, not an escrow (see [`bars26/genlayer-task-escrow`](https://github.com/bars26/genlayer-task-escrow) for that). This keeps the primitive focused and, in practice, makes it far easier to demo: no funded wallet is needed to exercise the full dispute lifecycle on a live network.
+## Verified live
 
-## What's included
+`scripts/demo.mjs` ran four disputes against one bonded agent with real validator consensus and real LLM calls. Every
+transaction hash is in [`docs/REPRODUCTION.md`](docs/REPRODUCTION.md).
 
-- **`contracts/verdict.py`** — the Intelligent Contract described above
-- **Direct mode tests** (`tests/direct/test_verdict.py`) — 11 fast, in-memory tests covering filing, resolution (upheld/dismissed), the non-boolean-verdict guard, double-resolution guard, and the view methods
-- **A working Next.js frontend** (`frontend/`) — file a dispute, see the pending-disputes queue with a resolve action, look up any agent's adjudicated trust record
-- **Contract linting** — static analysis to catch common contract issues before deployment
-- **CI pipeline** — GitHub Actions workflow for linting and direct tests
-- Configuration file template and deployment scripts (`deploy/deployScript.ts`)
+| Dispute | Evidence | Agent's answer | Ruling | Money |
+|---|---|---|---|---|
+| Order 1001 never delivered; asks 3 GEN | order log: paid, nothing after 48 h | "delayed by a backlog" | **Upheld** | client gets the stake back + **3 GEN from the bond** |
+| Order 1002 "never delivered"; asks 2 GEN | the client's own link shows delivery in 8 h 40 min | delivery receipt | **Dismissed**, contested by the client, **Dismissed** again | both stakes (1 GEN) to the agent |
+| "Poor machine translation" | `example.com`, unrelated | "unrelated to us" | **Insufficient evidence** | stake back |
+| Refund ignored for order 1003; asks 1 GEN | a page that does not exist | "no such order" | **Insufficient evidence**, decided in code | stake back, reservation released |
 
-## Requirements
-- Python >= 3.12
-- [GenLayer CLI](https://github.com/genlayerlabs/genlayer-cli) globally installed: `npm install -g genlayer`
-- GenLayer Studio (for integration tests and deployment): Install from [Docs](https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup#using-the-genlayer-studio) or use the hosted [GenLayer Studio](https://studio.genlayer.com/)
+Balances moved exactly as the contract's arithmetic says: agent 50 → 43 GEN (−10 bond, +1 from the dismissed dispute,
++2 unbonded), client-1 50 → 53, client-2 50 → 49, and the contract holds the agent's remaining 5 GEN bond.
+`is_trusted(agent, 5 GEN, 0)` is false after one upheld dispute; `is_trusted(agent, 5 GEN, 1)` is true.
 
-## Project Structure
+The evidence pages are labelled DEMO records in [`docs/demo-evidence`](docs/demo-evidence), fetched by validators from
+GitHub like any other public page.
 
+## How a ruling is made
+
+Each validator runs the same function inside `gl.eq_principle.strict_eq`:
+
+1. **Render the client's evidence page.** If it cannot be loaded or is empty, the result is `INSUFFICIENT_EVIDENCE`
+   with code `evidence_unreachable`, decided in code; the model is never asked.
+2. **Render the agent's evidence page**, if it linked one (an unloadable one is noted, not fatal).
+3. **One prompt** with the registered terms, the claim, both evidence texts and the agent's response, each fenced as
+   data with a length cap. The answer must be exactly one of `UPHELD`, `DISMISSED`, `INSUFFICIENT_EVIDENCE`;
+   anything else reverts.
+4. Validators agree on `{"verdict", "code"}` only, never on free text.
+
+## Game theory
+
+| Rule | Why |
+|---|---|
+| Disputes cost a 0.5 GEN stake; a dismissed dispute pays it to the agent | Fabricated or careless accusations cost the accuser, not the accused |
+| Compensation is reserved from the bond when the dispute is filed and can never exceed the unreserved bond | A client knows the money exists; an agent cannot be claimed twice for the same GEN |
+| Terms are snapshotted at filing; updates apply only to later disputes | Neither side can move the goalposts mid-dispute |
+| The agent gets one answer within the response window; anyone can ask for a ruling after it | The agent is heard, but cannot stall |
+| `INSUFFICIENT_EVIDENCE` refunds everyone and counts separately | A dead link or an unrelated page never hurts an agent's record, nor costs the client |
+| One contest, by the losing side only, staking the dispute's stake again; the contest stake goes to whoever the final ruling favours | A second validator set can correct a bad ruling, at a price, once |
+| Before the window closes only the losing side can settle (waiving its contest) | No forced wait when the result is accepted, no rushing a result in your own favour |
+| Unbonding has a notice period during which the bond stays claimable, and `is_trusted` excludes it | An agent cannot pull its bond the moment it sees a dispute coming |
+| Payouts are integer arithmetic | No model decides an amount |
+
+## Two GenLayer money pitfalls, and how Verdict handles them
+
+**1. Paying a wallet needs an external message.** `gl.get_contract_at(addr).emit_transfer(value=...)` sends an internal
+GenVM message; a wallet has no code to run and the GEN never arrives. Verdict pays through an external EVM message:
+
+```python
+@gl.evm.contract_interface
+class _Wallet:
+    class View: pass
+    class Write: pass
+
+_Wallet(to).emit_transfer(value=u256(amount))
 ```
-contracts/
-  verdict.py               # The Verdict Intelligent Contract
-tests/
-  direct/                   # Fast in-memory tests (no Studio required)
-    test_verdict.py          # Full lifecycle: file, resolve, guards, views
-  integration/               # Full tests against GenLayer Studio
-frontend/                   # Next.js 15 app (TypeScript, TanStack Query, Radix UI)
-deploy/                     # TypeScript deployment scripts
-gltest.config.yaml           # Test runner network configuration
-pyproject.toml               # Python/pytest configuration
-.github/workflows/           # CI pipeline
-```
 
-## Quick Start
+**2. A reverted payable call keeps the caller's GEN.** GenLayer credits a call's value to the contract even when it
+reverts, and the revert also undoes any refund. So `post_bond`, `file_dispute` and `contest` **never revert on a
+validation failure**: they send the value back and return `"REFUNDED: <reason>"`. The demo includes a 0.01 GEN bond
+deposit that is refunded this way, and the app reports such a refusal as one.
 
-### 1. Set up Python environment
+## Contract API
+
+| Method | Kind | What it does |
+|---|---|---|
+| `register_agent(name, terms, endpoint)` | write | The sender registers itself as an agent, or updates its terms |
+| `post_bond()` | payable write | A registered agent adds ≥ 0.1 GEN to its bond. Returns `bonded` or `REFUNDED: …` |
+| `request_withdrawal(amount)` / `complete_withdrawal()` | write | Start unbonding; withdraw what is still unreserved after the notice period |
+| `file_dispute(agent, claim, evidence_url, requested)` | payable write | Stake ≥ 0.5 GEN; optionally reserve `requested` from the bond. Returns the dispute id or `REFUNDED: …` |
+| `respond(dispute_id, response, counter_evidence_url)` | write | The agent answers once within the response window |
+| `resolve(dispute_id)` | write | Anyone, once the agent answered or the window passed: the consensus ruling |
+| `contest(dispute_id)` | payable write | The losing side, once, within the contest window, staking the dispute's stake |
+| `settle(dispute_id)` | write | Pays out the ruling; returns the payout |
+| `get_agent`, `get_dispute`, `list_agents`, `list_disputes`, `list_disputes_by_agent`, `trust_summary`, `is_trusted`, `windows` | views | |
+
+The windows are 10 minutes so the whole lifecycle can be shown on Studio; a production deployment would use days, and
+`windows()` exposes them to integrators.
+
+## Frontend
+
+Next.js app in `frontend/`: the agent registry with each agent's terms, bond, available bond and adjudicated record; a
+searchable dispute table with both sides' claims and evidence, the terms judged against, the ruling, payouts and on-chain
+history; the actions your wallet can take right now (respond, ask for a ruling, contest, settle); a file-dispute form
+that shows the terms and the compensation available; a "My agent" panel to register terms, post a bond and unbond; the
+`is_trusted` integrator check; a transactions panel (hash, consensus status, contract result, finality) and a Studio
+faucet button.
+
+- **Reads never spend the visitor's rate-limit budget.** Studio allows 30 `gen_call`/`eth_sendRawTransaction` per minute
+  per IP. Agents and disputes come from a CDN-cached server snapshot (`/api/snapshot`); after a write only the touched
+  agent and dispute are re-read. Opening the page makes no Studio call from the browser.
+- **ACCEPTED is not success.** The receipt's `execution_result` is checked, so a reverted call is reported as reverted,
+  with the contract's message; a `REFUNDED:` return is reported as a refusal with the GEN on its way back.
+- **Every write re-reads the dispute right before sending**, so a stale page never sends a call the contract would refuse.
+
+## Tests
+
+31 direct-mode tests (`tests/direct/test_verdict.py`) with mocked evidence pages and LLM answers: registration and its
+validation, bonds and the minimum deposit, terms snapshots, unbonding with reserved bond and the notice period, filing
+with compensation reservation, five kinds of invalid disputes refunded with nothing stored, self-disputes and
+compensation from unregistered agents, the response window and single answer, resolve timing, all three LLM verdicts,
+unreadable evidence decided in code, the non-enum guard, settlement arithmetic for all three outcomes, contests won and
+lost by either side, contest rules, `trust_summary`/`is_trusted`, and the views.
 
 ```shell
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Lint the contract
-
-```shell
+python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 genvm-lint check contracts/verdict.py
+python -m pytest tests/direct -q
 ```
 
-Passes clean with zero warnings — `_verify_claim`'s `gl.nondet.*` calls live inside `gl.eq_principle.strict_eq(get_verdict)`, one of the linter's recognized equivalence-principle wrappers.
+CI runs the linter, the tests and the frontend typecheck and build on every push.
 
-### 3. Run direct mode tests
+## Run it
 
 ```shell
-pytest tests/direct/ -v
+# frontend
+npm install && cp frontend/.env.example frontend/.env.local && npm run dev
+
+# live demo on Studio (creates and funds throwaway accounts from the Studio faucet)
+node scripts/demo.mjs <contract-address>
+
+# check the deployed code is byte-identical to contracts/verdict.py
+node scripts/verify-code.mjs <contract-address>
 ```
 
-All 11 tests run in-memory in well under a second, using `direct_vm.mock_web(...)` / `direct_vm.mock_llm(...)` to simulate evidence pages and LLM verdicts.
-
-### 4. Deploy the contract
-
-1. Choose your network: `genlayer network`
-2. Deploy: `genlayer deploy` (runs `deploy/deployScript.ts`, which deploys `contracts/verdict.py`)
-
-### 5. Run integration tests
-
-```shell
-gltest tests/integration/ -v -s
-```
-
-Requires GenLayer Studio running (local or hosted).
-
-### 6. Run the frontend
-
-```shell
-cp frontend/.env.example frontend/.env
-# set NEXT_PUBLIC_CONTRACT_ADDRESS to your deployed contract
-npm run dev
-```
-
-Open http://localhost:3000. Reads (pending disputes, agent lookup) work without a wallet; filing and resolving disputes need MetaMask connected to the GenLayer network.
+Deploy your own with `genlayer network set studionet && genlayer deploy --contract contracts/verdict.py`.
 
 ## Design notes
 
-- **Address-typed arguments are declared as `str`, not `Address`, and normalized internally.** This is a specific, verified compatibility fix: `genlayer-js`'s calldata encoder (`readContract`/`writeContract`) has no public API to construct an address-typed argument — a plain JS string is always encoded as `TYPE_STR`, so an `Address`-typed parameter would reject every call the actual frontend makes. The `genlayer` CLI does the opposite: it auto-detects hex-looking `--args` values and pre-encodes them as addresses regardless of the declared schema. A private `_to_address()` helper accepts either shape (`isinstance(value, Address)` passthrough, otherwise `Address(value)`), so both callers work. This was caught by testing real write transactions against a live deployment — direct-mode tests alone didn't surface it, since they call contract methods as plain Python functions and never exercise either encoder.
-- **Consensus on a boolean, not free text.** `_verify_claim` uses `gl.eq_principle.strict_eq`, which requires the leader's and validator's independent LLM calls to produce byte-identical output. The LLM is only ever asked for a single-field `{"upheld": bool}` JSON object — no open-ended reasoning is part of the equivalence-checked value, since free text would rarely match word-for-word between two independent calls.
-- **No coercing the LLM's verdict.** The parsed `"upheld"` value is checked with `isinstance(upheld, bool)`, not passed through `bool(...)`. A malformed or adversarial response like `{"upheld": "false"}` (a non-empty *string*, not a JSON boolean) is truthy under Python's `bool()`, which would silently flip a dismissal into an upheld dispute — `resolve_dispute` reverts instead of ever accepting a non-boolean value. (This is the same class of bug caught and fixed during review of this project's sibling contract, `TaskEscrow`.)
-- **Real GenVM state has to be `latest-final`ized before a fresh read reflects it** — a write's own `status_name: 'ACCEPTED'` from `genlayer write`/`writeContract` means consensus was reached (possibly on an *error*, if the call reverted), not that the call itself succeeded. Check `genvm_result`/`leader_receipt[].result` on the receipt, not just the top-level status, when debugging a write that "succeeded" but left no visible state change.
+- **Address arguments are declared as `str`** and parsed with a strict `0x` + 40 hex check: `genlayer-js` always
+  encodes JS strings as strings, so an `Address`-typed parameter would reject every frontend call.
+- **Consensus on an enum, not on text.** Validators must produce byte-identical `{"verdict", "code"}`; reasoning text is
+  never part of the equivalence-checked value.
+- **ACCEPTED means consensus, not success.** A reverted call is still ACCEPTED; the app and the demo check
+  `leader_receipt[0].execution_result` and the returned value.
 
-## Community
-- **[Discord](https://discord.gg/8Jm4v89VAu)**: Discussions, support, and announcements
-- **[Telegram](https://t.me/genlayer)**: Informal chats and quick updates
+## Limits, stated plainly
 
-## Documentation
-For detailed information, see the [GenLayer documentation](https://docs.genlayer.com/).
+- Validators judge what the evidence pages say. A client can still link a page they wrote; v2 makes that costly (the
+  stake) and contestable (the agent's own evidence and the contest), not impossible.
+- Windows are 10 minutes for the Studio demo; real deployments need days.
+- This runs on GenLayer Studio with test GEN.
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+MIT
