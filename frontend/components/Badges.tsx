@@ -10,10 +10,11 @@ export function VerdictBadge({ verdict }: { verdict: VerdictValue }) {
   );
 }
 
-export function StateBadge({ state }: { state: DisputeState }) {
+/** `readyToRule`: an open dispute whose agent answered or whose response window has passed. */
+export function StateBadge({ state, readyToRule = false }: { state: DisputeState; readyToRule?: boolean }) {
   return (
     <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATE_STYLE[state]}`}>
-      {STATE_LABEL[state]}
+      {state === "open" && readyToRule ? "ready to rule" : STATE_LABEL[state]}
     </span>
   );
 }

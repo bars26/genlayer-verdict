@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useVerdictWrite } from "@/lib/hooks/useVerdict";
+import { useNow } from "@/lib/hooks/useNow";
 import { useWallet } from "@/lib/genlayer/wallet";
 import {
   CONTEST_WINDOW_SECONDS,
@@ -26,6 +27,7 @@ export function DisputeActions({ dispute }: { dispute: Dispute }) {
   const { write, pending } = useVerdictWrite();
   const [response, setResponse] = useState("");
   const [counter, setCounter] = useState("");
+  useNow();
   const busy = (kind: string) => pending === `${kind}:${dispute.id}`;
 
   if (dispute.state === "settled") return null;

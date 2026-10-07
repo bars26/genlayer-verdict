@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Bot, Loader2 } from "lucide-react";
 import { useSnapshot, useVerdictWrite } from "@/lib/hooks/useVerdict";
 import { useWallet } from "@/lib/genlayer/wallet";
+import { useNow } from "@/lib/hooks/useNow";
 import { MIN_BOND_WEI, UNBOND_SECONDS, availableBond, formatGen, freeBond, parseGen, sameAddress, secondsSince, wei } from "@/lib/contracts/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -22,7 +23,6 @@ export function MyAgentPanel() {
   const [endpoint, setEndpoint] = useState("");
   const [bond, setBond] = useState("5");
   const [withdraw, setWithdraw] = useState("");
-  const [, tick] = useState(0);
 
   useEffect(() => {
     if (me?.registered) {
@@ -31,10 +31,7 @@ export function MyAgentPanel() {
       setEndpoint(me.endpoint);
     }
   }, [me?.registered, me?.name, me?.terms, me?.endpoint]);
-  useEffect(() => {
-    const t = setInterval(() => tick((n) => n + 1), 15_000);
-    return () => clearInterval(t);
-  }, []);
+  useNow();
 
   const btn = (kind: string, label: string, onClick: () => void, disabled = false, variant: "gradient" | "secondary" = "gradient") => (
     <Button size="sm" variant={variant} onClick={onClick} disabled={!!pending || disabled}>

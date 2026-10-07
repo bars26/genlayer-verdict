@@ -3,7 +3,8 @@
 import { Fragment, useMemo, useState } from "react";
 import { AlertCircle, ChevronDown, ChevronRight, ExternalLink, Loader2, RefreshCw, Scale, Search } from "lucide-react";
 import { useSnapshot } from "@/lib/hooks/useVerdict";
-import { CODE_TEXT, formatGen, parseJson, sameAddress, wei, type Agent, type Dispute, type DisputeState, type HistoryEntry } from "@/lib/contracts/types";
+import { CODE_TEXT, RESPONSE_WINDOW_SECONDS, formatGen, parseJson, sameAddress, secondsSince, wei, type Agent, type Dispute, type DisputeState, type HistoryEntry } from "@/lib/contracts/types";
+import { useNow } from "@/lib/hooks/useNow";
 import { toErrorInfo } from "@/lib/utils/errors";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -116,6 +117,8 @@ export function DisputesTable() {
 
 function DisputeRow({ dispute: d, agentName }: { dispute: Dispute; agentName: string }) {
   const [open, setOpen] = useState(false);
+  useNow();
+  const readyToRule = d.state === "open" && (d.responded || secondsSince(d.filed_at) > RESPONSE_WINDOW_SECONDS);
   const history = parseJson<HistoryEntry[]>(d.history_json, []);
   const payout = parseJson<Record<string, string>>(d.payout_json, {});
   return (
@@ -138,7 +141,7 @@ function DisputeRow({ dispute: d, agentName }: { dispute: Dispute; agentName: st
           {formatGen(d.stake)} GEN
           {wei(d.requested) > 0n && <span className="block text-xs text-muted-foreground">asks {formatGen(d.requested)}</span>}
         </td>
-        <td className="px-3 py-4"><StateBadge state={d.state} /></td>
+        <td className="px-3 py-4"><StateBadge state={d.state} readyToRule={readyToRule} /></td>
         <td className="px-3 py-4"><VerdictBadge verdict={d.verdict} /></td>
       </tr>
       {open && (
